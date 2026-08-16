@@ -7,6 +7,8 @@ import { AccountCard } from "./AccountCard";
 type AccountsListProps = {
   accounts: Account[];
   people: Person[];
+  contributions: Record<string, number>;
+  onContributionChange: (accountId: string, value: number) => void;
   onAccountChange: (id: string, updater: (a: Account) => Account) => void;
   onAddAccount: () => string;
   onDeleteAccount: (id: string) => void;
@@ -16,6 +18,8 @@ type AccountsListProps = {
 export function AccountsList({
   accounts,
   people,
+  contributions,
+  onContributionChange,
   onAccountChange,
   onAddAccount,
   onDeleteAccount,
@@ -32,6 +36,8 @@ export function AccountsList({
           key={account.id}
           account={account}
           people={people}
+          contribution={contributions[account.id] ?? 0}
+          onContributionChange={(v) => onContributionChange(account.id, v)}
           expanded={expandedId === account.id}
           onExpand={() => setExpandedId(account.id)}
           onCollapse={() => setExpandedId(null)}

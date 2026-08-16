@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { solveGoal } from "../goal";
-import type { Account, Goal, Person } from "../types";
+import type { Goal, Person, ScenarioAccount } from "../types";
 
 const people: Person[] = [
   { id: "p1", name: "Alex" },
@@ -9,7 +9,7 @@ const people: Person[] = [
 
 describe("solveGoal — acceptance criteria", () => {
   it("C. solves for required monthly contribution", () => {
-    const accounts: Account[] = [
+    const accounts: ScenarioAccount[] = [
       {
         id: "a1",
         name: "Test",
@@ -37,7 +37,7 @@ describe("solveGoal — acceptance criteria", () => {
   });
 
   it("already-there when existing balances alone clear the target", () => {
-    const accounts: Account[] = [
+    const accounts: ScenarioAccount[] = [
       {
         id: "a1",
         name: "Test",
@@ -60,7 +60,7 @@ describe("solveGoal — acceptance criteria", () => {
   });
 
   it("flat annuity solve when no contributions are in scope", () => {
-    const accounts: Account[] = [
+    const accounts: ScenarioAccount[] = [
       {
         id: "a1",
         name: "Test",

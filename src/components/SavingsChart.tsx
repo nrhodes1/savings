@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import {
   Area,
   CartesianGrid,
@@ -26,6 +26,7 @@ export type ChartDatum = {
   growth: number;
   total: number;
   requiredTotal?: number;
+  scenarios?: Record<string, number>; // scenarioId -> total, for inactive-scenario ghost lines
 };
 
 export type GoalOverlay = {
@@ -34,6 +35,8 @@ export type GoalOverlay = {
   crossing: Crossing;
 };
 
+export type ScenarioLine = { id: string; name: string; color: string };
+
 type SavingsChartProps = {
   data: ChartDatum[];
   horizonMonths: number;
@@ -41,6 +44,7 @@ type SavingsChartProps = {
   contributedColor: string;
   empty: boolean;
   goal?: GoalOverlay | null;
+  scenarioLines?: ScenarioLine[];
   onHoverChange?: (datum: ChartDatum | null) => void;
   startYear: number;
 };
@@ -56,6 +60,7 @@ export function SavingsChart({
   contributedColor,
   empty,
   goal,
+  scenarioLines = [],
   onHoverChange,
   startYear,
 }: SavingsChartProps) {
@@ -74,6 +79,9 @@ export function SavingsChart({
     let max = 0;
     for (const d of data) {
       max = Math.max(max, d.total, d.requiredTotal ?? 0);
+      if (d.scenarios) {
+        for (const v of Object.values(d.scenarios)) max = Math.max(max, v);
+      }
     }
     if (goal) max = Math.max(max, goal.amount);
     return max;
@@ -236,6 +244,19 @@ export function SavingsChart({
                   </>
                 )}
 
+                {scenarioLines.map((s) => (
+                  <Line
+                    key={s.id}
+                    dataKey={`scenarios.${s.id}`}
+                    stroke={s.color}
+                    strokeWidth={1.5}
+                    dot={false}
+                    activeDot={false}
+                    isAnimationActive={!reducedMotion}
+                    animationDuration={animationDuration}
+                  />
+                ))}
+
                 {hoverIndex !== null && (
                   <ReferenceLine
                     x={hoverIndex}
@@ -276,10 +297,10 @@ export function SavingsChart({
 
             {hoverIndex !== null && activeDatum && (
               <div
-                className="pointer-events-none absolute z-10 rounded-[6px] border border-rule bg-surface px-3 py-2 text-[12px] shadow-[var(--shadow-card)]"
+                className="pointer-events-none absolute z-10 w-max max-w-[220px] rounded-[6px] border border-rule bg-surface px-3 py-2 text-[12px] shadow-[var(--shadow-card)]"
                 style={{
-                  left: Math.min(Math.max(scaleX(activeDatum.t) + 12, 0), size.width - 168),
-                  top: Math.max(scaleY(activeDatum.total) - 88, 0),
+                  left: Math.min(Math.max(scaleX(activeDatum.t) + 12, 0), size.width - 190),
+                  top: Math.max(scaleY(activeDatum.total) - 88 - scenarioLines.length * 18, 0),
                   boxShadow: "var(--shadow-card)",
                 }}
               >
@@ -292,6 +313,23 @@ export function SavingsChart({
                   <dt className="text-left text-ink-soft">Growth</dt>
                   <dd className="text-ink">{formatCurrency(activeDatum.growth)}</dd>
                 </dl>
+                {scenarioLines.length > 0 && (
+                  <dl className="mt-2 grid grid-cols-[auto_auto] gap-x-3 gap-y-0.5 border-t border-rule pt-2 tnum text-right">
+                    {scenarioLines.map((s) => (
+                      <Fragment key={s.id}>
+                        <dt className="flex items-center gap-1.5 text-left text-ink-soft">
+                          <span
+                            aria-hidden="true"
+                            className="inline-block h-[7px] w-[7px] rounded-full"
+                            style={{ backgroundColor: s.color }}
+                          />
+                          {s.name}
+                        </dt>
+                        <dd className="text-ink">{formatCurrency(activeDatum.scenarios?.[s.id] ?? 0)}</dd>
+                      </Fragment>
+                    ))}
+                  </dl>
+                )}
               </div>
             )}
 
@@ -304,7 +342,12 @@ export function SavingsChart({
         )}
       </div>
 
-      <AccessibleTable data={data} horizonMonths={horizonMonths} startYear={startYear} />
+      <AccessibleTable
+        data={data}
+        horizonMonths={horizonMonths}
+        startYear={startYear}
+        scenarioLines={scenarioLines}
+      />
     </div>
   );
 }
@@ -362,10 +405,12 @@ function AccessibleTable({
   data,
   horizonMonths,
   startYear,
+  scenarioLines,
 }: {
   data: ChartDatum[];
   horizonMonths: number;
   startYear: number;
+  scenarioLines: ScenarioLine[];
 }) {
   const rows = [];
   for (let months = 0; months <= horizonMonths; months += 60) {
@@ -385,6 +430,11 @@ function AccessibleTable({
           <th scope="col">Contributed</th>
           <th scope="col">Growth</th>
           <th scope="col">Total</th>
+          {scenarioLines.map((s) => (
+            <th key={s.id} scope="col">
+              {s.name} total
+            </th>
+          ))}
         </tr>
       </thead>
       <tbody>
@@ -394,6 +444,9 @@ function AccessibleTable({
             <td>{formatCurrency(d.contributed)}</td>
             <td>{formatCurrency(d.growth)}</td>
             <td>{formatCurrency(d.total)}</td>
+            {scenarioLines.map((s) => (
+              <td key={s.id}>{formatCurrency(d.scenarios?.[s.id] ?? 0)}</td>
+            ))}
           </tr>
         ))}
       </tbody>

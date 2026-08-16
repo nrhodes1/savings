@@ -1,13 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { aggregateSeries, projectAccount, toRealDollars } from "../projection";
-import type { Account } from "../types";
+import { aggregateSeries, projectAccount, toRealDollars, type ProjectableAccount } from "../projection";
 
-function account(overrides: Partial<Account> = {}): Account {
+function account(overrides: Partial<ProjectableAccount> = {}): ProjectableAccount {
   return {
-    id: "a",
-    name: "Test",
-    ownerId: "p1",
-    type: "brokerage",
     balance: 0,
     annualReturnPct: 0,
     monthlyContribution: 0,
@@ -50,7 +45,7 @@ describe("projectAccount — acceptance criteria", () => {
 });
 
 describe("invariants over randomized inputs (E)", () => {
-  function randomAccount(): Account {
+  function randomAccount(): ProjectableAccount {
     return account({
       balance: Math.random() * 200_000,
       annualReturnPct: Math.random() * 15,

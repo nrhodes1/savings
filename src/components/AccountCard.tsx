@@ -18,6 +18,8 @@ import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
 type AccountCardProps = {
   account: Account;
   people: Person[];
+  contribution: number;
+  onContributionChange: (value: number) => void;
   expanded: boolean;
   onExpand: () => void;
   onCollapse: () => void;
@@ -30,6 +32,8 @@ type AccountCardProps = {
 export function AccountCard({
   account,
   people,
+  contribution,
+  onContributionChange,
   expanded,
   onExpand,
   onCollapse,
@@ -59,7 +63,7 @@ export function AccountCard({
         <p className="font-display tnum text-[20px] text-ink">
           {formatCurrency(account.balance)}
           <span className="ml-2 text-[13px] font-sans text-ink-soft">
-            {formatPercent(account.annualReturnPct)} · {formatCurrency(account.monthlyContribution)}/mo
+            {formatPercent(account.annualReturnPct)} · {formatCurrency(contribution)}/mo
           </span>
         </p>
       </button>
@@ -156,13 +160,13 @@ export function AccountCard({
               <NumberField
                 id={`${account.id}-contribution`}
                 label="Monthly contribution"
-                value={account.monthlyContribution}
-                onChange={(v) => onChange((a) => ({ ...a, monthlyContribution: v }))}
+                value={contribution}
+                onChange={onContributionChange}
                 format={formatCurrency}
                 step={50}
                 min={0}
                 max={1e6}
-                error={validateMonthlyContribution(account.monthlyContribution)}
+                error={validateMonthlyContribution(contribution)}
               />
               <NumberField
                 id={`${account.id}-increase`}

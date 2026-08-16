@@ -1,5 +1,3 @@
-import type { Account } from "./types";
-
 export type MonthPoint = {
   t: number; // months from now, 0-indexed
   balance: number;
@@ -14,10 +12,12 @@ export type AggregatePoint = {
   total: number;
 };
 
-type ProjectableAccount = Pick<
-  Account,
-  "balance" | "annualReturnPct" | "monthlyContribution" | "annualIncreasePct"
->;
+export type ProjectableAccount = {
+  balance: number;
+  annualReturnPct: number;
+  monthlyContribution: number;
+  annualIncreasePct: number;
+};
 
 /** Geometric monthly rate from a nominal annual percentage. */
 export function monthlyRate(annualReturnPct: number): number {

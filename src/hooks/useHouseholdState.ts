@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { HouseholdState } from "@/lib/types";
+import { normalizeHouseholdState } from "@/lib/migrate";
 
 export type SaveStatus = "loading" | "saved" | "saving" | "retrying";
 
@@ -39,7 +40,7 @@ export function useHouseholdState() {
       const res = await fetch("/api/state");
       if (!res.ok || cancelled) return;
       const body = await res.json();
-      if (!cancelled) applyServerState(body.data, body.updatedAt);
+      if (!cancelled) applyServerState(normalizeHouseholdState(body.data), body.updatedAt);
     })();
     return () => {
       cancelled = true;
@@ -60,7 +61,7 @@ export function useHouseholdState() {
 
       if (res.status === 409) {
         const body = await res.json();
-        setConflict({ data: body.data, updatedAt: body.updatedAt });
+        setConflict({ data: normalizeHouseholdState(body.data), updatedAt: body.updatedAt });
         setStatus("saved");
         return;
       }
@@ -96,14 +97,15 @@ export function useHouseholdState() {
     const body = await res.json();
     if (body.updatedAt === baseUpdatedAt.current) return;
 
+    const normalized = normalizeHouseholdState(body.data);
     const current = stateRef.current;
-    const unchanged = current && JSON.stringify(current) === JSON.stringify(body.data);
+    const unchanged = current && JSON.stringify(current) === JSON.stringify(normalized);
     if (unchanged) {
       baseUpdatedAt.current = body.updatedAt;
       return;
     }
 
-    setConflict({ data: body.data, updatedAt: body.updatedAt });
+    setConflict({ data: normalized, updatedAt: body.updatedAt });
   }, []);
 
   useEffect(() => {

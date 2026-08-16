@@ -12,6 +12,7 @@ import { HorizonSlider } from "@/components/HorizonSlider";
 import { AccountsList } from "@/components/AccountsList";
 import { GoalPanel } from "@/components/GoalPanel";
 import { ConflictBar } from "@/components/ConflictBar";
+import { ScenarioSwitcher } from "@/components/ScenarioSwitcher";
 import {
   aggregateSeries,
   deflate,
@@ -19,12 +20,12 @@ import {
   projectAccount,
   toRealDollars,
   type AggregatePoint,
-  type MonthPoint,
 } from "@/lib/projection";
 import { solveGoal } from "@/lib/goal";
+import { addAccountToScenarios, createScenario, removeAccountFromScenarios, withScenarioContribution } from "@/lib/scenario";
 import { addMonths, formatFromNow, formatMonthYear, monthsUntil } from "@/lib/date";
 import { validateGoalAmount, validateGoalDate } from "@/lib/validation";
-import type { Account } from "@/lib/types";
+import type { Account, ScenarioAccount } from "@/lib/types";
 
 export default function Home() {
   const { state, status, updateState, conflict, loadTheirVersion } = useHouseholdState();
@@ -32,13 +33,33 @@ export default function Home() {
   const [segment, setSegment] = useState<Segment>("together");
   const [excluded, setExcluded] = useState<Set<string>>(new Set());
   const [hoverDatum, setHoverDatum] = useState<ChartDatum | null>(null);
+  const [justAddedScenarioId, setJustAddedScenarioId] = useState<string | null>(null);
 
   const months = state ? state.assumptions.horizonYears * 12 : 0;
 
-  const visibleAccounts = useMemo<Account[]>(() => {
+  const activeScenario = useMemo(() => {
+    if (!state) return null;
+    return state.scenarios.find((s) => s.id === state.activeScenarioId) ?? state.scenarios[0] ?? null;
+  }, [state]);
+
+  // Segment + chip filtering happens on the plain account list, independent of
+  // any scenario — so the same filtered set of accounts can be re-resolved
+  // against the active scenario (for the chart/headline/goal) and against
+  // every other scenario (for the comparison ghost lines) alike.
+  const visibleAccountsRaw = useMemo<Account[]>(() => {
     if (!state) return [];
     return segment === "together" ? state.accounts : state.accounts.filter((a) => a.ownerId === segment);
   }, [state, segment]);
+
+  const activeAccountsRaw = useMemo(
+    () => visibleAccountsRaw.filter((a) => !excluded.has(a.id)),
+    [visibleAccountsRaw, excluded],
+  );
+
+  const visibleAccounts = useMemo<ScenarioAccount[]>(
+    () => (activeScenario ? visibleAccountsRaw.map((a) => withScenarioContribution(a, activeScenario)) : []),
+    [visibleAccountsRaw, activeScenario],
+  );
 
   const activeAccounts = useMemo(
     () => visibleAccounts.filter((a) => !excluded.has(a.id)),
@@ -46,17 +67,20 @@ export default function Home() {
   );
 
   const perAccountSeries = useMemo(() => {
-    const map = new Map<string, MonthPoint[]>();
+    const map = new Map<string, ReturnType<typeof projectAccount>>();
     for (const a of visibleAccounts) map.set(a.id, projectAccount(a, months));
     return map;
   }, [visibleAccounts, months]);
 
+  const zeroSeries = useMemo<AggregatePoint[]>(
+    () => Array.from({ length: months + 1 }, (_, t) => ({ t, contributed: 0, growth: 0, total: 0 })),
+    [months],
+  );
+
   const activeAggregateNominal = useMemo<AggregatePoint[]>(() => {
-    if (activeAccounts.length === 0) {
-      return Array.from({ length: months + 1 }, (_, t) => ({ t, contributed: 0, growth: 0, total: 0 }));
-    }
+    if (activeAccounts.length === 0) return zeroSeries;
     return aggregateSeries(activeAccounts.map((a) => perAccountSeries.get(a.id)!));
-  }, [activeAccounts, perAccountSeries, months]);
+  }, [activeAccounts, perAccountSeries, zeroSeries]);
 
   const showRealDollars = state?.assumptions.showRealDollars ?? false;
   const inflationPct = state?.assumptions.inflationPct ?? 0;
@@ -66,15 +90,35 @@ export default function Home() {
     [activeAggregateNominal, showRealDollars, inflationPct],
   );
 
+  // Other scenarios, re-resolved over the same filtered account set, for the
+  // thin comparison lines on the chart.
+  const scenarioSeries = useMemo(() => {
+    if (!state) return [];
+    return state.scenarios
+      .filter((s) => s.id !== state.activeScenarioId)
+      .map((s) => {
+        const resolved = activeAccountsRaw.map((a) => withScenarioContribution(a, s));
+        const nominal = resolved.length ? aggregateSeries(resolved.map((a) => projectAccount(a, months))) : zeroSeries;
+        const display = showRealDollars ? toRealDollars(nominal, inflationPct) : nominal;
+        return { id: s.id, name: s.name, color: s.color, series: display };
+      });
+  }, [state, activeAccountsRaw, months, zeroSeries, showRealDollars, inflationPct]);
+
+  const scenarioLines = useMemo(
+    () => scenarioSeries.map((s) => ({ id: s.id, name: s.name, color: s.color })),
+    [scenarioSeries],
+  );
+
   const goal = state?.goal ?? null;
   const targetMonths = goal ? monthsUntil(goal.targetDate, now) : null;
   const goalDateValid = targetMonths !== null && validateGoalDate(targetMonths) === null;
   const goalAmountValid = goal !== null && validateGoalAmount(goal.amount) === null;
 
   const goalResult = useMemo(() => {
-    if (!state || !goal || !goalDateValid || !goalAmountValid) return null;
-    return solveGoal(state.accounts, state.people, goal, targetMonths as number, months);
-  }, [state, goal, goalDateValid, goalAmountValid, targetMonths, months]);
+    if (!state || !goal || !goalDateValid || !goalAmountValid || !activeScenario) return null;
+    const scenarioAccounts = state.accounts.map((a) => withScenarioContribution(a, activeScenario));
+    return solveGoal(scenarioAccounts, state.people, goal, targetMonths as number, months);
+  }, [state, goal, goalDateValid, goalAmountValid, activeScenario, targetMonths, months]);
 
   const displayGoalAmount = useMemo(() => {
     if (!goal || targetMonths === null) return null;
@@ -102,8 +146,11 @@ export default function Home() {
         growth: point.growth,
         total: point.total,
         requiredTotal: displayRequiredSeries?.[i]?.total,
+        scenarios: scenarioSeries.length
+          ? Object.fromEntries(scenarioSeries.map((s) => [s.id, s.series[i]?.total ?? 0]))
+          : undefined,
       })),
-    [activeAggregateDisplay, displayRequiredSeries],
+    [activeAggregateDisplay, displayRequiredSeries, scenarioSeries],
   );
 
   function personColor(personId: string): string {
@@ -149,12 +196,47 @@ export default function Home() {
           type: "other",
           balance: 0,
           annualReturnPct: 7,
-          monthlyContribution: 0,
           annualIncreasePct: 0,
         },
       ],
+      scenarios: addAccountToScenarios(prev.scenarios, id, 0),
     }));
     return id;
+  }
+
+  function handleContributionChange(accountId: string, value: number) {
+    updateState((prev) => ({
+      ...prev,
+      scenarios: prev.scenarios.map((s) =>
+        s.id === prev.activeScenarioId ? { ...s, contributions: { ...s.contributions, [accountId]: value } } : s,
+      ),
+    }));
+  }
+
+  function handleAddScenario() {
+    const id = nanoid();
+    updateState((prev) => {
+      const current = prev.scenarios.find((s) => s.id === prev.activeScenarioId) ?? prev.scenarios[0];
+      const next = createScenario(id, `Scenario ${prev.scenarios.length + 1}`, prev.scenarios.length, prev.accounts, current);
+      return { ...prev, scenarios: [...prev.scenarios, next], activeScenarioId: next.id };
+    });
+    setJustAddedScenarioId(id);
+  }
+
+  function handleRenameScenario(id: string, name: string) {
+    updateState((prev) => ({
+      ...prev,
+      scenarios: prev.scenarios.map((s) => (s.id === id ? { ...s, name } : s)),
+    }));
+  }
+
+  function handleDeleteScenario(id: string) {
+    updateState((prev) => {
+      const remaining = prev.scenarios.filter((s) => s.id !== id);
+      if (remaining.length === 0) return prev;
+      const activeScenarioId = prev.activeScenarioId === id ? remaining[0].id : prev.activeScenarioId;
+      return { ...prev, scenarios: remaining, activeScenarioId };
+    });
   }
 
   return (
@@ -193,6 +275,7 @@ export default function Home() {
                 ? { label: goal.label, amount: displayGoalAmount, crossing: goalCrossing }
                 : null
             }
+            scenarioLines={scenarioLines}
             onHoverChange={setHoverDatum}
             startYear={now.getFullYear()}
           />
@@ -229,9 +312,24 @@ export default function Home() {
         </section>
 
         <aside className="flex flex-col gap-6">
+          <div className="flex flex-col gap-2">
+            <p className="label-utility">Scenarios</p>
+            <ScenarioSwitcher
+              scenarios={state.scenarios}
+              activeScenarioId={state.activeScenarioId}
+              onSelect={(id) => updateState((prev) => ({ ...prev, activeScenarioId: id }))}
+              onRename={handleRenameScenario}
+              onDelete={handleDeleteScenario}
+              onAdd={handleAddScenario}
+              autoRenameId={justAddedScenarioId}
+            />
+          </div>
+
           <AccountsList
             accounts={state.accounts}
             people={state.people}
+            contributions={activeScenario?.contributions ?? {}}
+            onContributionChange={handleContributionChange}
             onAccountChange={(id, updater) =>
               updateState((prev) => ({
                 ...prev,
@@ -240,7 +338,11 @@ export default function Home() {
             }
             onAddAccount={handleAddAccount}
             onDeleteAccount={(id) =>
-              updateState((prev) => ({ ...prev, accounts: prev.accounts.filter((a) => a.id !== id) }))
+              updateState((prev) => ({
+                ...prev,
+                accounts: prev.accounts.filter((a) => a.id !== id),
+                scenarios: removeAccountFromScenarios(prev.scenarios, id),
+              }))
             }
             ownerColor={personColor}
           />

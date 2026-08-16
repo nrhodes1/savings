@@ -1,7 +1,7 @@
-import type { Account, Goal, GoalScope, Person } from "./types";
+import type { Goal, GoalScope, Person, ScenarioAccount } from "./types";
 import { aggregateSeries, monthlyRate, projectAccount, type AggregatePoint } from "./projection";
 
-export function inScopeAccounts(accounts: Account[], scope: GoalScope): Account[] {
+export function inScopeAccounts(accounts: ScenarioAccount[], scope: GoalScope): ScenarioAccount[] {
   switch (scope.kind) {
     case "household":
       return accounts;
@@ -48,7 +48,7 @@ export type GoalResult = {
  * real dollars and finds the crossing there if the real-dollars toggle is on.
  */
 export function solveGoal(
-  accounts: Account[],
+  accounts: ScenarioAccount[],
   people: Person[],
   goal: Goal,
   targetMonths: number,
@@ -121,7 +121,7 @@ export function solveGoal(
 
 /** Standard ordinary-annuity solve, used when no contributions are in scope. */
 function solveFlatMonthly(
-  scoped: Account[],
+  scoped: ScenarioAccount[],
   remaining: number,
   months: number,
 ): { requiredMonthly: number; effectiveAnnualReturnPct: number } {

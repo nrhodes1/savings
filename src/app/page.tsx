@@ -158,13 +158,13 @@ export default function Home() {
     return state.people[0]?.id === personId ? "var(--person-1)" : "var(--person-2)";
   }
 
+  // The active area's colors follow the active scenario's assigned color —
+  // the same dot shown on its pill in the switcher and on its ghost line when
+  // it's not the one active.
   const { growthColor, contributedColor } = useMemo(() => {
-    if (segment === "together" || !state) {
-      return { growthColor: "var(--growth)", contributedColor: "var(--contributed)" };
-    }
-    const color = state.people[0]?.id === segment ? "var(--person-1)" : "var(--person-2)";
+    const color = activeScenario?.color ?? "var(--growth)";
     return { growthColor: color, contributedColor: `color-mix(in srgb, ${color} 22%, var(--contributed))` };
-  }, [segment, state]);
+  }, [activeScenario]);
 
   if (!state) {
     return <div className="min-h-screen bg-paper" />;

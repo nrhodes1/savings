@@ -100,7 +100,7 @@ export function GoalPanel({
           type="text"
           value={goal.label}
           onChange={(e) => onUpdateGoal((g) => ({ ...g, label: e.target.value }))}
-          className="w-full rounded-[6px] border border-rule bg-surface px-3 py-2 text-[15px] text-ink outline-none focus-visible:outline-2 focus-visible:outline-growth"
+          className="w-full rounded-[6px] border border-rule bg-surface px-3 py-2 text-[15px] text-ink outline-none focus-visible:outline-2 focus-visible:outline-ink"
         />
       </div>
 
@@ -125,7 +125,7 @@ export function GoalPanel({
           value={goal.targetDate}
           min={`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`}
           onChange={(e) => onUpdateGoal((g) => ({ ...g, targetDate: e.target.value }))}
-          className="tnum w-full rounded-[6px] border border-rule bg-surface px-3 py-2 text-[15px] text-ink outline-none focus-visible:outline-2 focus-visible:outline-growth"
+          className="tnum w-full rounded-[6px] border border-rule bg-surface px-3 py-2 text-[15px] text-ink outline-none focus-visible:outline-2 focus-visible:outline-ink"
         />
         {dateError && (
           <p role="alert" className="mt-1 text-[13px] text-warn">
@@ -189,7 +189,7 @@ function GoalReadout({
     );
   }
 
-  const deltaColor = solution.status === "flat" ? undefined : solution.delta > 0 ? "var(--warn)" : "var(--growth)";
+  const deltaColor = solution.status === "flat" ? undefined : solution.delta > 0 ? "var(--warn)" : "var(--ink)";
 
   return (
     <div className="flex flex-col gap-1 pt-1">

@@ -41,7 +41,7 @@ export default function UnlockPage() {
           autoFocus
           value={passcode}
           onChange={(e) => setPasscode(e.target.value)}
-          className="w-full rounded-[6px] border border-rule bg-surface px-4 py-3 text-center text-[20px] tnum text-ink outline-none focus-visible:outline-2 focus-visible:outline-growth"
+          className="w-full rounded-[6px] border border-rule bg-surface px-4 py-3 text-center text-[20px] tnum text-ink outline-none focus-visible:outline-2 focus-visible:outline-ink"
           aria-label="Passcode"
         />
         {error && (

@@ -11,7 +11,7 @@ export function ConflictBar({ onLoadTheirVersion }: ConflictBarProps) {
       <button
         type="button"
         onClick={onLoadTheirVersion}
-        className="shrink-0 font-medium text-ink hover:text-growth"
+        className="shrink-0 font-medium text-ink hover:text-ink"
       >
         Load their version
       </button>

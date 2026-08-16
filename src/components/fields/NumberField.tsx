@@ -72,7 +72,7 @@ export function NumberField({
         onKeyDown={handleKeyDown}
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? `${id}-error` : undefined}
-        className="tnum w-full rounded-[6px] border border-rule bg-surface-sunk px-3 py-2 text-[15px] text-ink outline-none focus-visible:outline-2 focus-visible:outline-growth"
+        className="tnum w-full rounded-[6px] border border-rule bg-surface-sunk px-3 py-2 text-[15px] text-ink outline-none focus-visible:outline-2 focus-visible:outline-ink"
       />
       {error && (
         <p id={`${id}-error`} role="alert" className="mt-1 text-[13px] text-warn">

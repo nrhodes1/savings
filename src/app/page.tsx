@@ -154,7 +154,7 @@ export default function Home() {
   );
 
   function personColor(personId: string): string {
-    if (!state) return "var(--growth)";
+    if (!state) return "var(--ink)";
     return state.people[0]?.id === personId ? "var(--person-1)" : "var(--person-2)";
   }
 
@@ -162,7 +162,7 @@ export default function Home() {
   // the same dot shown on its pill in the switcher and on its ghost line when
   // it's not the one active.
   const { growthColor, contributedColor } = useMemo(() => {
-    const color = activeScenario?.color ?? "var(--growth)";
+    const color = activeScenario?.color ?? "var(--ink)";
     return { growthColor: color, contributedColor: `color-mix(in srgb, ${color} 22%, var(--contributed))` };
   }, [activeScenario]);
 
@@ -281,7 +281,17 @@ export default function Home() {
           />
 
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <SegmentedControl people={state.people} value={segment} onChange={handleSegmentChange} />
+            <SegmentedControl
+              people={state.people}
+              value={segment}
+              onChange={handleSegmentChange}
+              onRename={(personId, name) =>
+                updateState((prev) => ({
+                  ...prev,
+                  people: prev.people.map((p) => (p.id === personId ? { ...p, name } : p)),
+                }))
+              }
+            />
             <HorizonSlider
               value={state.assumptions.horizonYears}
               onChange={(years) =>

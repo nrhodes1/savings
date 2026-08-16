@@ -89,7 +89,7 @@ export function AccountCard({
                   value={account.name}
                   onChange={(e) => onChange((a) => ({ ...a, name: e.target.value }))}
                   aria-invalid={validateAccountName(account.name) ? true : undefined}
-                  className="w-full rounded-[6px] border border-rule bg-surface-sunk px-3 py-2 text-[15px] text-ink outline-none focus-visible:outline-2 focus-visible:outline-growth"
+                  className="w-full rounded-[6px] border border-rule bg-surface-sunk px-3 py-2 text-[15px] text-ink outline-none focus-visible:outline-2 focus-visible:outline-ink"
                 />
                 {validateAccountName(account.name) && (
                   <p role="alert" className="mt-1 text-[13px] text-warn">
@@ -125,7 +125,7 @@ export function AccountCard({
                   id={`${account.id}-type`}
                   value={account.type}
                   onChange={(e) => onChange((a) => ({ ...a, type: e.target.value as Account["type"] }))}
-                  className="w-full rounded-[6px] border border-rule bg-surface-sunk px-3 py-2 text-[15px] text-ink outline-none focus-visible:outline-2 focus-visible:outline-growth"
+                  className="w-full rounded-[6px] border border-rule bg-surface-sunk px-3 py-2 text-[15px] text-ink outline-none focus-visible:outline-2 focus-visible:outline-ink"
                 >
                   {ACCOUNT_TYPES.map((t) => (
                     <option key={t} value={t}>

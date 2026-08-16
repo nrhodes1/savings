@@ -27,7 +27,7 @@ export function HorizonSlider({ value, onChange }: HorizonSliderProps) {
         onChange={(e) => onChange(SNAP_POINTS[Number(e.target.value)])}
         aria-label="Time horizon"
         aria-valuetext={`${value} years`}
-        className="h-1 w-40 cursor-pointer accent-[var(--growth)]"
+        className="h-1 w-40 cursor-pointer accent-ink"
       />
       <span className="tnum text-[13px] text-ink-soft whitespace-nowrap">{value} yrs</span>
     </div>

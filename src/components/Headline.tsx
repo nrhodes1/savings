@@ -16,7 +16,7 @@ export function Headline({ label, total, contributed, growth }: HeadlineProps) {
   return (
     <div>
       <p className="label-utility mb-1">{label}</p>
-      <p className="font-display tnum text-[56px] leading-none text-ink">
+      <p className="font-display tnum text-[56px] font-light leading-none text-ink">
         {formatCurrency(animatedTotal)}
       </p>
       <p className="mt-2 text-[15px] tnum text-ink-soft">

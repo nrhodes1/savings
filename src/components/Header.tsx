@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { Toggle } from "./Toggle";
+import { InfoTooltip } from "./InfoTooltip";
 import type { SaveStatus } from "@/hooks/useHouseholdState";
 
 type HeaderProps = {
@@ -30,7 +31,17 @@ export function Header({ showRealDollars, onToggleRealDollars, status }: HeaderP
     <header className="flex items-center justify-between gap-4 py-6">
       <h1 className="font-display text-[20px] leading-none text-ink">Savings</h1>
       <div className="flex items-center gap-5">
-        <Toggle checked={showRealDollars} onChange={onToggleRealDollars} label="Today's dollars" />
+        <Toggle
+          checked={showRealDollars}
+          onChange={onToggleRealDollars}
+          label="Today's dollars"
+          info={
+            <InfoTooltip label="What 'Today's dollars' means">
+              Adjusts future amounts for inflation, so they stay comparable to what money is worth today. Off shows
+              the raw future total instead.
+            </InfoTooltip>
+          }
+        />
         <span className="text-[11px] text-ink-faint tnum" aria-live="polite">
           {STATUS_LABEL[status]}
         </span>

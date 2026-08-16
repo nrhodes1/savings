@@ -49,8 +49,7 @@ type SavingsChartProps = {
   startYear: number;
 };
 
-const MARGIN = { top: 24, right: 140, bottom: 8, left: 8 };
-const Y_AXIS_WIDTH = 60;
+const NARROW_BREAKPOINT = 640;
 const X_AXIS_HEIGHT = 24;
 
 export function SavingsChart({
@@ -87,9 +86,18 @@ export function SavingsChart({
     return max;
   }, [data, goal]);
 
+  // The growth wedge needs ~140px of reserved right margin to read well —
+  // on a narrow container there's no room for it, so it's dropped and that
+  // space goes back to the plot instead.
+  const isNarrow = size.width > 0 && size.width < NARROW_BREAKPOINT;
+  const Y_AXIS_WIDTH = isNarrow ? 46 : 60;
+  const MARGIN = isNarrow
+    ? { top: 24, right: 16, bottom: 8, left: 4 }
+    : { top: 24, right: 140, bottom: 8, left: 8 };
+
   const yTicks = useMemo(() => niceTicks(maxValue * 1.05, 5), [maxValue]);
   const yMax = yTicks[yTicks.length - 1] ?? 1;
-  const xTicks = useMemo(() => yearTicks(horizonMonths, 6), [horizonMonths]);
+  const xTicks = useMemo(() => yearTicks(horizonMonths, isNarrow ? 4 : 6), [horizonMonths, isNarrow]);
 
   const plotLeft = MARGIN.left + Y_AXIS_WIDTH;
   const plotRight = size.width - MARGIN.right;
@@ -283,7 +291,7 @@ export function SavingsChart({
                   fill="var(--ink)"
                 />
               )}
-              {activeDatum && (
+              {activeDatum && !isNarrow && (
                 <GrowthWedge
                   x={plotRight + 14}
                   yTop={scaleY(activeDatum.total)}
@@ -297,9 +305,11 @@ export function SavingsChart({
 
             {hoverIndex !== null && activeDatum && (
               <div
-                className="pointer-events-none absolute z-10 w-max max-w-[220px] rounded-[6px] border border-rule bg-surface px-3 py-2 text-[12px] shadow-[var(--shadow-card)]"
+                className={`pointer-events-none absolute z-10 w-max rounded-[6px] border border-rule bg-surface px-3 py-2 text-[12px] shadow-[var(--shadow-card)] ${
+                  isNarrow ? "max-w-[160px]" : "max-w-[220px]"
+                }`}
                 style={{
-                  left: Math.min(Math.max(scaleX(activeDatum.t) + 12, 0), size.width - 190),
+                  left: Math.min(Math.max(scaleX(activeDatum.t) + 12, 0), size.width - (isNarrow ? 168 : 190)),
                   top: Math.max(scaleY(activeDatum.total) - 88 - scenarioLines.length * 18, 0),
                   boxShadow: "var(--shadow-card)",
                 }}
